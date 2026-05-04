@@ -1,0 +1,13 @@
+.vscode
+
+# Secrets and keys
+secrets/
+*.pem
+*.key
+
+# Environment files
+backend/.env
+.env
+
+# OS
+.DS_Store

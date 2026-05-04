@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: horoscope-db
+    environment:
+      POSTGRES_DB: horoscope_vault
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: horoscope-backend
+    environment:
+      DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/horoscope_vault?sslmode=disable"
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public.pem
+      PORT: "8080"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    ports:
+      - "8888:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./db:/app/db
+      - ./secrets:/run/secrets
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
